@@ -1,0 +1,181 @@
+// Sources flattened with hardhat v2.9.6 https://hardhat.org
+
+// File contracts/interfaces/IAddressesProvider.sol
+
+
+pragma solidity ^0.8.17;
+
+interface IAddressesProvider {
+    function setAddress(bytes32 _id, address _newAddress) external;
+
+    function setRouterImpl(address _newRouterImpl) external;
+
+    function setConfiguratorImpl(address _newConfiguratorImpl) external;
+
+    function getRouter() external view returns (address);
+
+    function getConfigurator() external view returns (address);
+
+    function getACLAdmin() external view returns (address);
+
+    function getACLManager() external view returns (address);
+
+    function getConnectors() external view returns (address);
+
+    function getTreasury() external view returns (address);
+
+    function getAccountImpl() external view returns (address);
+
+    function getAccountProxy() external view returns (address);
+
+    function getAddress(bytes32 _id) external view returns (address);
+}
+
+
+// File contracts/lib/Errors.sol
+
+
+pragma solidity ^0.8.17;
+
+/**
+ * @title Errors library
+ * @author FlashFlow
+ * @notice Defines the error messages emitted by the different contracts of the FlashFlow protocol
+ */
+library Errors {
+    // The caller of the function is not a account owner
+    string public constant CALLER_NOT_ACCOUNT_OWNER = '1';
+    // The caller of the function is not a account contract
+    string public constant CALLER_NOT_RECEIVER = '2';
+    // The caller of the function is not a flash aggregatoor contract
+    string public constant CALLER_NOT_FLASH_AGGREGATOR = '3';
+    // The caller of the function is not a position owner
+    string public constant CALLER_NOT_POSITION_OWNER = '4';
+    // The address of the pool addresses provider is invalid
+    string public constant INVALID_ADDRESSES_PROVIDER = '5';
+    // The initiator of the flashloan is not a account contract
+    string public constant INITIATOR_NOT_ACCOUNT = '6';
+    // Failed to charge the protocol fee
+    string public constant CHARGE_FEE_NOT_COMPLETED = '7';
+    // The sender does not have an account
+    string public constant ACCOUNT_DOES_NOT_EXIST = '9';
+    // Invalid amount to charge fee
+    string public constant INVALID_CHARGE_AMOUNT = '10';
+    // There is no connector with this name
+    string public constant NOT_CONNECTOR = '11';
+    // The address of the connector is invalid
+    string public constant INVALID_CONNECTOR_ADDRESS = '12';
+    // The length of the connector array and their names are different
+    string public constant INVALID_CONNECTORS_LENGTH = '13';
+    // A connector with this name already exists
+    string public constant CONNECTOR_ALREADY_EXIST = '14';
+    // A connector with this name does not exist
+    string public constant CONNECTOR_DOES_NOT_EXIST = '15';
+    // The caller of the function is not a configurator
+    string public constant CALLER_NOT_CONFIGURATOR = '16';
+    // The fee amount is invalid
+    string public constant INVALID_FEE_AMOUNT = '17';
+    // The address of the implementation is invalid
+    string public constant INVALID_IMPLEMENTATION_ADDRESS = '18';
+    // 'ACL admin cannot be set to the zero address'
+    string public constant ACL_ADMIN_CANNOT_BE_ZERO = '19';
+    // 'The caller of the function is not a router admin'
+    string public constant CALLER_NOT_ROUTER_ADMIN = '20';
+    // 'The caller of the function is not an emergency admin'
+    string public constant CALLER_NOT_EMERGENCY_ADMIN = '21';
+    // 'The caller of the function is not an connector admin'
+    string public constant CALLER_NOT_CONNECTOR_ADMIN = '22';
+    // Address should be not zero address
+    string public constant ADDRESS_IS_ZERO = '23';
+    // The caller of the function is not a router contract
+    string public constant CALLER_NOT_ROUTER = '24';
+    // The call to the open/close callback function failed
+    string public constant EXECUTE_OPERATION_FAILED = '25';
+    // Invalid amount to leverage
+    string public constant LEVERAGE_IS_INVALID = '26';
+}
+
+
+// File contracts/Proxy.sol
+
+
+pragma solidity ^0.8.17;
+
+
+/**
+ * @title Proxy
+ * @author FlashFlow
+ * @notice Contract used as proxy for the user account.
+ * @dev This abstract contract provides a fallback function that delegates all calls to another contract using the EVM
+ * instruction `delegatecall`.
+ *
+ * Additionally, delegation to the implementation can be triggered manually through the {_fallback} function, or to a
+ * different contract through the {_delegate} function.
+ *
+ * The success and return data of the delegated call will be returned back to the caller of the proxy.
+ */
+contract Proxy {
+    // The contract by which all other contact addresses are obtained.
+    IAddressesProvider public immutable ADDRESSES_PROVIDER;
+
+    constructor(address _provider) {
+        ADDRESSES_PROVIDER = IAddressesProvider(_provider);
+    }
+
+    /**
+     * @dev Delegates the current call to `implementation`.
+     *
+     * This function does not return to its internal call site, it will return directly to the external caller.
+     */
+    function _delegate(address implementation) internal virtual {
+        assembly {
+            // Copy msg.data. We take full control of memory in this inline assembly
+            // block because it will not return to Solidity code. We overwrite the
+            // Solidity scratch pad at memory position 0.
+            calldatacopy(0, 0, calldatasize())
+
+            // Call the implementation.
+            // out and outsize are 0 because we don't know the size yet.
+            let result := delegatecall(gas(), implementation, 0, calldatasize(), 0, 0)
+
+            // Copy the returned data.
+            returndatacopy(0, 0, returndatasize())
+
+            switch result
+            // delegatecall returns 0 on error.
+            case 0 {
+                revert(0, returndatasize())
+            }
+            default {
+                return(0, returndatasize())
+            }
+        }
+    }
+
+    /**
+     * @dev Delegates the current call to the address returned by `getImplementation()`.
+     *
+     * This function does not return to its internal call site, it will return directly to the external caller.
+     */
+    function _fallback() internal {
+        address _implementation = ADDRESSES_PROVIDER.getAccountImpl();
+        require(_implementation != address(0), Errors.INVALID_IMPLEMENTATION_ADDRESS);
+        _delegate(_implementation);
+    }
+
+    /**
+     * @dev Fallback function that delegates calls to the address returned by `getImplementation()`.
+     * Will run if no other function in the contract matches the call data.
+     */
+    fallback() external payable {
+        _fallback();
+    }
+
+    /**
+     * @dev Fallback function that delegates calls to the address returned by `getImplementation()`.
+     * Will run if call data is empty.
+     */
+    receive() external payable {
+        _fallback();
+    }
+}

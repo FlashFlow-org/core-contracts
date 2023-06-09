@@ -1,0 +1,22 @@
+[profile.default]
+src = 'contracts'
+out = 'out'
+libs = ['node_modules', 'lib']
+bytecode_hash = 'none'
+cbor_metadata = false
+auto_detect_solc = false
+block_timestamp = 1_680_220_800 # March 31, 2023 at 00:00 GMT
+gas_reports = ["*"]
+optimizer = true
+optimizer_runs = 10_000
+script = "script"
+solc = "0.8.19"
+test = 'test'
+cache_path  = 'cache'
+
+[rpc_endpoints]
+mainnet = "https://eth-mainnet.alchemyapi.io/v2/qPC1XAgnhOiR3kuhw9DJ8g8WVLWs6R9Q"
+polygon = "https://polygon-mainnet.g.alchemy.com/v2/HghRGb1iay3CRNxxmD-dTwsxi8PEK88H"
+bsc = "https://bsc-dataseed.binance.org"
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config

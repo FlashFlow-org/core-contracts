@@ -1,0 +1,17 @@
+{
+  "detectors_to_run": "reentrancy-eth,reentrancy-no-eth,reentrancy-unlimited-gas",
+  "exclude_informational": false,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "disable_color": false,
+  "legacy_ast": false,
+  "filter_paths": "(test/|lib/)",
+  "solc_remaps": [
+    "src/=src/",
+    "test/=test/",
+    "ds-test/=lib/ds-test/src/",
+    "forge-std/=lib/forge-std/src/",
+    "@openzeppelin/=lib/openzeppelin-contracts/"
+  ]
+}
